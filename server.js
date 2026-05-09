@@ -44,3 +44,5 @@ app.post('/ai/chat', async (req, res) => {
     const systemPrompt = system || `You are the Kingdom Wealth Builders AI Coach — a warm, expert, faith-centered financial stewardship coach. Be encouraging, practical, and warm. Give ONE clear actionable next step per response. Format with **bold** for key points.`;
     const response = await client.messages.create({
       model: 'claude-sonnet-4-2025051
+
+      
