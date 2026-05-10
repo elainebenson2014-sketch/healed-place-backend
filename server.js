@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
-  origin: ['https://kingdom-wealth-frontend.vercel.app', 'https://thehealedplace.org', /\.vercel\.app$/],
+  origin: '*',
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
