@@ -377,28 +377,38 @@ ${userContext?.faithLevel ? `FAITH: ${faithGuide[userContext.faithLevel] || ""}`
 Be encouraging, practical, and warm. Give ONE clear actionable next step. Format with **bold** for key points.`;
 
   try {
-    // Try Railway backend first
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-    const res = await fetch("https://comfortable-motivation-production-5d65.up.railway.app/ai/chat", {
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    // Use Anthropic API directly via artifact proxy
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: messages.map(m => ({ role: m.role, content: m.content })), system: systemPrompt }),
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": "proxy",
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: messages.map(m => ({ role: m.role, content: m.content })).slice(-10),
+      }),
       signal: controller.signal,
     });
     clearTimeout(timeout);
-    if (!res.ok) throw new Error("API error " + res.status);
     const d = await res.json();
-    if (d.reply) return d.reply;
-    throw new Error("No reply");
+    if (d.content?.[0]?.text) return d.content[0].text;
+    throw new Error("No content");
   } catch(e) {
-    // Fallback response when API unavailable
-    const fallbacks = [
-      `I'm here to support your financial journey! Based on your plan, here's my advice:\n\n**Focus on your #1 priority this week.** Small consistent actions compound over time. Whether it's tracking spending, making an extra debt payment, or adding to savings — one faithful step today leads to freedom tomorrow.\n\n"Commit to the Lord whatever you do, and he will establish your plans." — Proverbs 16:3 🙏`,
-      `Great question! Here's what I'd recommend:\n\n**Start with what you can control today.** Review your spending from the last 7 days, identify one area to trim, and redirect that money toward your top goal.\n\nRemember — financial freedom is built one decision at a time. You've got this! 👑`,
-      `Here's a Kingdom wealth principle for you:\n\n**The 10-10-80 rule:** Give 10%, Save 10%, Live on 80%. Even starting at 1-1-98 and growing gradually will transform your finances over time.\n\nWhat specific area would you like to focus on? I can give more targeted advice! 🌟`,
-    ];
-    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+    // Smart fallback responses
+    const input = messages[messages.length-1]?.content?.toLowerCase() || "";
+    if (input.includes("budget") || input.includes("spend")) return "**For your budget**, start by tracking every dollar this week. Use the 10-10-80 rule: Give 10%, Save 10%, Live on 80%. Even starting at 5-5-90 builds powerful momentum. Which expense category would you like to tackle first? 💰";
+    if (input.includes("debt") || input.includes("snowball")) return "**The Debt Snowball Method:** List your debts smallest to largest. Pay minimums on all, then attack the smallest with everything extra. When it's gone, roll that payment to the next. **This week's action:** Make one extra payment on your smallest debt — even $25 matters! 💳";
+    if (input.includes("motivat") || input.includes("discourag")) return "**You are already ahead** — most people never face their finances honestly. Every consistent step forward compounds. \"The plans of the diligent lead to profit.\" (Proverbs 21:5) **This week:** Complete just ONE action from your dashboard. Momentum builds from small wins. 👑";
+    if (input.includes("scripture") || input.includes("bible") || input.includes("faith")) return "Here's a powerful stewardship scripture for you:\n\n**\"Honor the Lord with your wealth, with the firstfruits of all your crops; then your barns will be filled to overflowing.\"** — Proverbs 3:9-10\n\nGiving first — before bills, before spending — is an act of faith that God honors. Even giving $10 when money is tight builds a generous spirit. 🙏";
+    if (input.includes("saving") || input.includes("emergency")) return "**Building your Emergency Fund** is priority #1 before aggressive debt payoff. Target $1,000 first — this prevents new debt when life happens.\n\n**This week:** Open a separate savings account and set up an automatic transfer of even $25/paycheck. Automation removes the decision. 🛡️";
+    return "**Great question!** Here's my Kingdom Wealth advice:\n\nFocus on one thing this week — consistency beats intensity every time. Review your top priority on the dashboard, take the 7-day action step, and come back to tell me how it went.\n\n\"Commit to the Lord whatever you do, and he will establish your plans.\" — Proverbs 16:3 👑";
   }
 }
 
