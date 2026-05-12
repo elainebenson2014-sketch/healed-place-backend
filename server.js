@@ -2103,8 +2103,10 @@ function AICoach({ user, plan }) {
       const apiMsgs = [{ role: "user", content: `[Context: ${context}]\n\n${content}` }, ...newMsgs.slice(1).map(m => ({ role: m.role, content: m.content }))];
       const reply = await askCoach(apiMsgs, plan?.user);
       setMsgs(prev => [...prev, { role: "assistant", content: reply, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
-    } catch {
-      setMsgs(prev => [...prev, { role: "assistant", content: "I'm sorry — I couldn't reach the server right now. Please try again in a moment. 🙏", time }]);
+    } catch(e) {
+      // askCoach always returns a string, so this should rarely trigger
+      const reply = await askCoach([{ role: "user", content }], plan?.user).catch(() => "I'm here to help! Ask me about budgeting, debt payoff, savings, or faith-based finances. 👑");
+      setMsgs(prev => [...prev, { role: "assistant", content: reply, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
     }
     setLoading(false);
   };
