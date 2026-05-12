@@ -2099,15 +2099,9 @@ function AICoach({ user, plan }) {
     const newMsgs = [...msgs, { role: "user", content, time }];
     setMsgs(newMsgs);
     setLoading(true);
-    try {
-      const apiMsgs = [{ role: "user", content: `[Context: ${context}]\n\n${content}` }, ...newMsgs.slice(1).map(m => ({ role: m.role, content: m.content }))];
-      const reply = await askCoach(apiMsgs, plan?.user);
-      setMsgs(prev => [...prev, { role: "assistant", content: reply, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
-    } catch(e) {
-      // askCoach always returns a string, so this should rarely trigger
-      const reply = await askCoach([{ role: "user", content }], plan?.user).catch(() => "I'm here to help! Ask me about budgeting, debt payoff, savings, or faith-based finances. 👑");
-      setMsgs(prev => [...prev, { role: "assistant", content: reply, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
-    }
+    const apiMsgs = [{ role: "user", content: `[Context: ${context}]\n\n${content}` }, ...newMsgs.slice(1).map(m => ({ role: m.role, content: m.content }))];
+    const reply = await askCoach(apiMsgs, plan?.user);
+    setMsgs(prev => [...prev, { role: "assistant", content: reply, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
     setLoading(false);
   };
 
@@ -2317,10 +2311,23 @@ function BudgetTracker() {
   const [month, setMonth] = useState(now.getMonth());
   const [year, setYear] = useState(now.getFullYear());
   const [tab, setTab] = useState("income");
-  const [income, setIncome] = useState([]);
-  const [expenses, setExpenses] = useState([]);
-  const [mileage, setMileage] = useState([]);
+
+  // Load from localStorage on mount
+  const [income, setIncome] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('kwb_income') || '[]'); } catch { return []; }
+  });
+  const [expenses, setExpenses] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('kwb_expenses') || '[]'); } catch { return []; }
+  });
+  const [mileage, setMileage] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('kwb_mileage') || '[]'); } catch { return []; }
+  });
   const [bankRows, setBankRows] = useState([]);
+
+  // Save to localStorage whenever data changes
+  useEffect(() => { try { localStorage.setItem('kwb_income', JSON.stringify(income)); } catch {} }, [income]);
+  useEffect(() => { try { localStorage.setItem('kwb_expenses', JSON.stringify(expenses)); } catch {} }, [expenses]);
+  useEffect(() => { try { localStorage.setItem('kwb_mileage', JSON.stringify(mileage)); } catch {} }, [mileage]);
   const [incSrc, setIncSrc] = useState(""); const [incCat, setIncCat] = useState("Primary job"); const [incAmt, setIncAmt] = useState("");
   const [expDate, setExpDate] = useState(now.toISOString().slice(0,10)); const [expDesc, setExpDesc] = useState(""); const [expCat, setExpCat] = useState("Housing"); const [expAmt, setExpAmt] = useState(""); const [expNotes, setExpNotes] = useState("");
   const [milDate, setMilDate] = useState(now.toISOString().slice(0,10)); const [milPurpose, setMilPurpose] = useState(""); const [milMiles, setMilMiles] = useState(""); const [milType, setMilType] = useState("Business");
